@@ -1,4 +1,6 @@
-# <img src="logo.svg" alt="OpenZeppelin" height="40px">
+
+代码里有逐行代码中文详解（有些机翻，有些带上了自己理解）
+开发智能合约必备库
 
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.openzeppelin.com/contracts)
 [![NPM Package](https://img.shields.io/npm/v/@openzeppelin/contracts.svg)](https://www.npmjs.org/package/@openzeppelin/contracts)
