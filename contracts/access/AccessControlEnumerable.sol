@@ -8,6 +8,7 @@ import "./AccessControl.sol";
 import "../utils/structs/EnumerableSet.sol";
 
 /**
+{AccessControl}的扩展，允许枚举每个角色的成员。
  * @dev Extension of {AccessControl} that allows enumerating the members of each role.
  */
 abstract contract AccessControlEnumerable is IAccessControlEnumerable, AccessControl {

@@ -4,17 +4,23 @@
 pragma solidity ^0.8.0;
 
 /**
+全局ERC1820注册表的接口，在https://eips.ethereum.org/EIPS/eip-1820[EIP]中定义。
+帐户可以在这个注册中心注册接口的实现者，以及查询支持。
  * @dev Interface of the global ERC1820 Registry, as defined in the
  * https://eips.ethereum.org/EIPS/eip-1820[EIP]. Accounts may register
  * implementers for interfaces in this registry, as well as query support.
  *
+ 实现者可以由多个帐户共享，也可以为每个帐户实现多个接口。
+ 契约可以为自己实现接口，但外部拥有的帐户(EOA)必须将此委托给契约。
  * Implementers may be shared by multiple accounts, and can also implement more
  * than a single interface for each account. Contracts can implement interfaces
  * for themselves, but externally-owned accounts (EOA) must delegate this to a
  * contract.
  *
+ {IERC165}接口也可以通过注册表查询。
  * {IERC165} interfaces can also be queried via the registry.
  *
+ 有关深入的解释和源代码分析，请参阅EIP文本。
  * For an in-depth explanation and source code analysis, see the EIP text.
  */
 interface IERC1820Registry {
@@ -23,9 +29,12 @@ interface IERC1820Registry {
     event ManagerChanged(address indexed account, address indexed newManager);
 
     /**
+    将' newManager '设置为' account '的管理器。帐户的管理员能够为其设置接口实现者。
      * @dev Sets `newManager` as the manager for `account`. A manager of an
      * account is able to set interface implementers for it.
      *
+     默认情况下，每个帐户都是自己的管理员。
+     在' newManager '中传递一个' 0x0 '的值会将管理器重置为初始状态。
      * By default, each account is its own manager. Passing a value of `0x0` in
      * `newManager` will reset the manager to this initial state.
      *
@@ -71,12 +80,16 @@ interface IERC1820Registry {
     ) external;
 
     /**
+    返回 account 地址里是否有 interfaceHash 的实现。
+    如果没有注册这样的实现者，则返回零地址。
      * @dev Returns the implementer of `interfaceHash` for `account`. If no such
      * implementer is registered, returns the zero address.
      *
+     如果' interfaceHash '是一个{IERC165}接口id(即它以28个零结尾)，' account '将被查询以获得支持。
      * If `interfaceHash` is an {IERC165} interface id (i.e. it ends with 28
      * zeroes), `account` will be queried for support of it.
      *
+     ' account '作为零地址是调用者地址的别名。
      * `account` being the zero address is an alias for the caller's address.
      */
     function getInterfaceImplementer(address account, bytes32 _interfaceHash) external view returns (address);

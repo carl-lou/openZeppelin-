@@ -5,14 +5,18 @@
 pragma solidity ^0.8.0;
 
 /**
+管理原始类型的一个库
  * @dev Library for managing
  * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
  * types.
  *
+ 集合具有以下属性:
  * Sets have the following properties:
  *
+ 在常数时间复杂度(O(1))内添加、删除和检查元素是否存在。
  * - Elements are added, removed, and checked for existence in constant time
  * (O(1)).
+ 元素在O(n)中枚举。订购时不作任何保证。
  * - Elements are enumerated in O(n). No guarantees are made on the ordering.
  *
  * ```

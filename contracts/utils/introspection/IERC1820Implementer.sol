@@ -10,7 +10,7 @@ pragma solidity ^0.8.0;
  * {IERC1820Registry}.
  */
 interface IERC1820Implementer {
-    /**
+    /**如果这个合约实现了' account '的' interfaceHash '，则返回一个特殊值(' ERC1820_ACCEPT_MAGIC ')。
      * @dev Returns a special value (`ERC1820_ACCEPT_MAGIC`) if this contract
      * implements `interfaceHash` for `account`.
      *

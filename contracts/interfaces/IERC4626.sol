@@ -41,11 +41,15 @@ interface IERC4626 is IERC20, IERC20Metadata {
     function totalAssets() external view returns (uint256 totalManagedAssets);
 
     /**
+    在所有条件都满足的理想情况下，返回金库将交换的资产数量的股份数量。
      * @dev Returns the amount of shares that the Vault would exchange for the amount of assets provided, in an ideal
      * scenario where all the conditions are met.
      *
+     不得包括对金库中的资产收取的任何费用。
      * - MUST NOT be inclusive of any fees that are charged against assets in the Vault.
+     不能根据调用者显示任何变化。
      * - MUST NOT show any variations depending on the caller.
+     在执行实际交换时，不得反映滑脱或其他链上条件。
      * - MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
      * - MUST NOT revert.
      *
@@ -119,31 +123,42 @@ interface IERC4626 is IERC20, IERC20Metadata {
     function maxMint(address receiver) external view returns (uint256 maxShares);
 
     /**
+    允许链上或链下用户模拟他们的铸造在当前区块的影响，给定当前的链上条件。
      * @dev Allows an on-chain or off-chain user to simulate the effects of their mint at the current block, given
      * current on-chain conditions.
      *
+     归还金额必须接近且不少于同一交易中一次mint调用 所存放资产的确切金额。
+     例如，如果在同一个事务中调用mint, mint应该返回与previewMint相同或更少的资产。
      * - MUST return as close to and no fewer than the exact amount of assets that would be deposited in a mint call
      *   in the same transaction. I.e. mint should return the same or fewer assets as previewMint if called in the
      *   same transaction.
+     不能考虑像maxMint返回的那样的mint数量限制，应该始终表现为薄荷是可以接受的，无论用户是否有足够的令牌批准等。
      * - MUST NOT account for mint limits like those returned from maxMint and should always act as though the mint
      *   would be accepted, regardless if the user has enough tokens approved, etc.
+
+    必须包括押金。集成商应该意识到保证金的存在。
      * - MUST be inclusive of deposit fees. Integrators should be aware of the existence of deposit fees.
      * - MUST NOT revert.
      *
+     convertToAssets和previewMint之间的任何不利差异都应被视为股价下滑或其他类型的条件，这意味着储户将因铸币而失去资产。
      * NOTE: any unfavorable discrepancy between convertToAssets and previewMint SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by minting.
      */
     function previewMint(uint256 shares) external view returns (uint256 assets);
 
     /**
+    Mints通过存入一定量的基础代币，准确地将金库股份分享给接收者。
      * @dev Mints exactly shares Vault shares to receiver by depositing amount of underlying tokens.
-     *
+     *必须发射存入事件
      * - MUST emit the Deposit event.
+    可能支持一个额外的流程，在铸造方法执行之前，基础代币由金库合同所有，并在mint期间记账
      * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the mint
      *   execution, and are accounted for during mint.
+     如果所有股份无法铸造，则必须恢复(由于达到存款限额、滑移、用户没有批准足够的基础代币到金库合同等)。
      * - MUST revert if all of shares cannot be minted (due to deposit limit being reached, slippage, the user not
      *   approving enough underlying tokens to the Vault contract, etc).
      *
+     大多数实现将需要使用金库的基础资产令牌对金库进行预先批准。
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
     function mint(uint256 shares, address receiver) external returns (uint256 assets);

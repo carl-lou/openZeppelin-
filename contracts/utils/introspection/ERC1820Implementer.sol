@@ -8,6 +8,8 @@ import "./IERC1820Implementer.sol";
 /**
  * @dev Implementation of the {IERC1820Implementer} interface.
  *
+ 合约可以继承这个，并调用{_registerInterfaceForAddress}来声明它们愿意成为实现者。
+ 然后调用{IERC1820Registry-setInterfaceImplementer}以完成注册。
  * Contracts may inherit from this and call {_registerInterfaceForAddress} to
  * declare their willingness to be implementers.
  * {IERC1820Registry-setInterfaceImplementer} should then be called for the
@@ -16,6 +18,7 @@ import "./IERC1820Implementer.sol";
 contract ERC1820Implementer is IERC1820Implementer {
     bytes32 private constant _ERC1820_ACCEPT_MAGIC = keccak256("ERC1820_ACCEPT_MAGIC");
 
+    // bytes32指的是 ERC协议的keccak256哈希后的字节。 映射哪些合约注册了这个ERC
     mapping(bytes32 => mapping(address => bool)) private _supportedInterfaces;
 
     /**

@@ -49,6 +49,7 @@ interface IERC777 {
     function symbol() external view returns (string memory);
 
     /**
+    // 返回令牌中不可整除的最小部分。这意味着所有令牌操作(创建、移动和销毁)的数量必须是这个数字的倍数。
      * @dev Returns the smallest part of the token that is not divisible. This
      * means all token operations (creation, movement and destruction) must have
      * amounts that are a multiple of this number.
@@ -78,8 +79,11 @@ interface IERC777 {
      *
      * Requirements
      *
+     调用方必须至少有' amount '令牌。
      * - the caller must have at least `amount` tokens.
+     '收件人'不能是零地址。
      * - `recipient` cannot be the zero address.
+    //  如果' receiver '是一个合约，它必须实现{ierc777receiver}
      * - if `recipient` is a contract, it must implement the {IERC777Recipient}
      * interface.
      */
@@ -105,6 +109,8 @@ interface IERC777 {
     function burn(uint256 amount, bytes calldata data) external;
 
     /**
+    如果帐户是' tokenHolder '的操作员，则返回true。
+    操作员可以代表代币所有者发送和刻录代币。所有帐户都是自己的操作员。
      * @dev Returns true if an account is an operator of `tokenHolder`.
      * Operators can send and burn tokens on behalf of their owners. All
      * accounts are their own operator.

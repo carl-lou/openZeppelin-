@@ -29,11 +29,11 @@ library Address {
      *
      * [IMPORTANT]
      * ====
-     你不应该依赖“isContract”来防止闪贷攻击!
+     你不应该依赖“isContract”来防止闪贷攻击!  
      * You shouldn't rely on `isContract` to protect against flash loan attacks!
      *
      非常不鼓励阻止来自契约的调用。它破坏了可组合性，破坏了对Gnosis Safe等智能钱包的支持，
-     并且不提供安全性，因为可以通过调用契约构造函数来规避安全性。
+     并且不提供安全性，因为可以通过调用契约构造函数来规避安全性。来自构造函数里的调用，code.length是0
      * Preventing calls from contracts is highly discouraged. It breaks composability, 
      breaks support for smart wallets
      * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
@@ -41,7 +41,8 @@ library Address {
      * ====
      */
     function isContract(address account) internal view returns (bool) {
-        // 此方法依赖于extcodesize/address.code.length，它对于构造中的契约返回0，因为代码只存储在构造函数执行的末尾。
+        // 此方法依赖于extcodesize/address.code.length，
+        // 它对于构造中的契约返回0，因为代码只存储在构造函数执行的末尾。
         // This method relies on extcodesize/address.code.length, which returns 0
         // for contracts in construction, since the code is only stored at the end
         // of the constructor execution.
@@ -223,6 +224,7 @@ library Address {
     }
 
     /**
+    来验证低级调用是否成功的工具，如果不成功，则通过冒泡恢复原因或使用提供的原因进行恢复。
      * @dev Tool to verify that a low level call was successful, and revert if it wasn't, either by bubbling the
      * revert reason or using the provided one.
      *

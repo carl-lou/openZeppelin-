@@ -27,15 +27,19 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     string private _symbol;
 
     // Mapping from token ID to owner address
+    // tokenID归属于哪个地址
     mapping(uint256 => address) private _owners;
 
     // Mapping owner address to token count
+    // 地址名下拥有的 NFT数量
     mapping(address => uint256) private _balances;
 
     // Mapping from token ID to approved address
+    // tokenID对用户地址的授权，单个NFT授权的时候使用
     mapping(uint256 => address) private _tokenApprovals;
 
     // Mapping from owner to operator approvals
+    // 拥有者 对 操作者的授权。 批量授权时使用。 拥有者对授权者 授权名下所有NFT的操作权
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     /**
@@ -50,6 +54,8 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+        // 传入IERC721接口Id，或者IERC721Metadata接口id，都会返回true。  可以用于查询本合约是否继承了这两个接口
+        // supper.supportsInterface是 IERC165接口
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
@@ -229,6 +235,8 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      * and stop existing when they are burned (`_burn`).
      */
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
+        // mapping(uint256 => address) private _owners;
+        // 看_ownerOf映射里，该tokenId是否已经有地址归属了，如果不是0地址，则返回true,表示tokenId已存在
         return _ownerOf(tokenId) != address(0);
     }
 
@@ -268,7 +276,9 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         bytes memory data
     ) internal virtual {
         _mint(to, tokenId);
+        // 要求目标地址 必须是721标准的合约地址
         require(
+            // 从无到有，所以from入参为address(0)
             _checkOnERC721Received(address(0), to, tokenId, data),
             "ERC721: transfer to non ERC721Receiver implementer"
         );
@@ -287,15 +297,21 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      * Emits a {Transfer} event.
      */
     function _mint(address to, uint256 tokenId) internal virtual {
+        // 目标地址不能是0地址
         require(to != address(0), "ERC721: mint to the zero address");
+        // tokenId应不存在，否则是已经mint过了
         require(!_exists(tokenId), "ERC721: token already minted");
-
+        
+        // to地址的 余额的数量变化。 不过仅仅在末尾入参>1的时候生效
         _beforeTokenTransfer(address(0), to, tokenId, 1);
 
+        // 检查这个tokenId 没有被_beforeTokenTransfer钩子函数mint
         // Check that tokenId was not minted by `_beforeTokenTransfer` hook
         require(!_exists(tokenId), "ERC721: token already minted");
 
         unchecked {
+            // 不会溢出，除非所有2**256个令牌id都创建给同一个所有者。
+            // 鉴于令牌是一个接一个地铸造的，在实践中这种情况是不可能发生的。如果我们允许批量铸造，可能会改变。ERC没有描述这个案例。
             // Will not overflow unless all 2**256 token ids are minted to the same owner.
             // Given that tokens are minted one by one, it is impossible in practice that
             // this ever happens. Might change if we allow batch minting.
@@ -303,10 +319,13 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
             _balances[to] += 1;
         }
 
+        // 映射tokenID到to地址
         _owners[tokenId] = to;
 
+        // 相当于触发了一次从0地址到目标地址的转账
         emit Transfer(address(0), to, tokenId);
 
+        // 目前空函数，等待需要的人加入
         _afterTokenTransfer(address(0), to, tokenId, 1);
     }
 
@@ -369,6 +388,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         require(ERC721.ownerOf(tokenId) == from, "ERC721: transfer from incorrect owner");
 
         // Clear approvals from the previous owner
+        // 这个NFT转给别人后，原来这个NFT的授权人需要全部销毁
         delete _tokenApprovals[tokenId];
 
         unchecked {
@@ -407,12 +427,15 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         address operator,
         bool approved
     ) internal virtual {
+        // 不能是自己
         require(owner != operator, "ERC721: approve to caller");
+        // owner给operator授权 名下所有NFT的授权
         _operatorApprovals[owner][operator] = approved;
         emit ApprovalForAll(owner, operator, approved);
     }
 
     /**
+    如果' tokenId '还没有被铸造，则回滚
      * @dev Reverts if the `tokenId` has not been minted yet.
      */
     function _requireMinted(uint256 tokenId) internal view virtual {
@@ -420,7 +443,9 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     }
 
     /**
+    在目标地址上调用{IERC721Receiver-onERC721Received}的内部函数。
      * @dev Internal function to invoke {IERC721Receiver-onERC721Received} on a target address.
+     如果目标地址不是契约，则不执行调用。
      * The call is not executed if the target address is not a contract.
      *
      * @param from address representing the previous owner of the given token ID
@@ -475,13 +500,16 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         address from,
         address to,
         uint256, /* firstTokenId */
-        uint256 batchSize
+        uint256 batchSize//tokenId数量
     ) internal virtual {
+        // 单次处理的数量>1，批量处理的时候
         if (batchSize > 1) {
             if (from != address(0)) {
+                // 不是来自0地址，也就不是来自mint铸造。 则from地址的余额减少batchSize
                 _balances[from] -= batchSize;
             }
             if (to != address(0)) {
+                // 若不是销毁。 则to地址的余额增加batchSize
                 _balances[to] += batchSize;
             }
         }

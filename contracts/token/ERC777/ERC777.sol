@@ -32,27 +32,34 @@ contract ERC777 is Context, IERC777, IERC20 {
 
     IERC1820Registry internal constant _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) private _balances;//余额
 
     uint256 private _totalSupply;
 
     string private _name;
     string private _symbol;
 
+    // 代币发送者 字符的 哈希加密字符
     bytes32 private constant _TOKENS_SENDER_INTERFACE_HASH = keccak256("ERC777TokensSender");
+    // ERC777TokensRecipient 的哈希加密字符
     bytes32 private constant _TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     // This isn't ever read from - it's only used to respond to the defaultOperators query.
+    // 它不会被读取——它只用于响应defaultOperators查询。
+    // 默认操作地址（管理员）数组
     address[] private _defaultOperatorsArray;
 
     // Immutable, but accounts may revoke them (tracked in __revokedDefaultOperators).
+    // 不可变，但是帐户可以撤销它们(在__revokedDefaultOperators中跟踪)。
     mapping(address => bool) private _defaultOperators;
 
     // For each account, a mapping of its operators and revoked default operators.
+    // 对于每个帐户，其操作者们 和 已撤销默认操作人 的映射。
     mapping(address => mapping(address => bool)) private _operators;
     mapping(address => mapping(address => bool)) private _revokedDefaultOperators;
 
     // ERC20-allowances
+    // 和ERC20一样的 授权储存变量
     mapping(address => mapping(address => uint256)) private _allowances;
 
     /**
@@ -67,11 +74,13 @@ contract ERC777 is Context, IERC777, IERC20 {
         _symbol = symbol_;
 
         _defaultOperatorsArray = defaultOperators_;
+        // 所有操作者 默认都有权限
         for (uint256 i = 0; i < defaultOperators_.length; i++) {
             _defaultOperators[defaultOperators_[i]] = true;
         }
 
         // register interfaces
+        // 在ERC1820里 注册本合约
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), keccak256("ERC777Token"), address(this));
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), keccak256("ERC20Token"), address(this));
     }
@@ -97,15 +106,18 @@ contract ERC777 is Context, IERC777, IERC20 {
      * [ERC777 EIP](https://eips.ethereum.org/EIPS/eip-777#backward-compatibility).
      */
     function decimals() public pure virtual returns (uint8) {
+        // 做了规范，默认写死18位小数，和ERC20不一样
         return 18;
     }
 
-    /**
+    /**粒度
+    
      * @dev See {IERC777-granularity}.
      *
      * This implementation always returns `1`.
      */
     function granularity() public view virtual override returns (uint256) {
+        // 粒度默认为1
         return 1;
     }
 
@@ -117,6 +129,7 @@ contract ERC777 is Context, IERC777, IERC20 {
     }
 
     /**
+    // 返回传入地址的 代币持有量
      * @dev Returns the amount of tokens owned by an account (`tokenHolder`).
      */
     function balanceOf(address tokenHolder) public view virtual override(IERC20, IERC777) returns (uint256) {
@@ -126,6 +139,7 @@ contract ERC777 is Context, IERC777, IERC20 {
     /**
      * @dev See {IERC777-send}.
      *
+     还为ERC20兼容性发出{IERC20-Transfer}事件。
      * Also emits a {IERC20-Transfer} event for ERC20 compatibility.
      */
     function send(
@@ -139,9 +153,11 @@ contract ERC777 is Context, IERC777, IERC20 {
     /**
      * @dev See {IERC20-transfer}.
      *
+     与' send '不同，' receiver '不需要实现{ierc777receiver}
      * Unlike `send`, `recipient` is _not_ required to implement the {IERC777Recipient}
      * interface if it is a contract.
      *
+     还会触发一个{Sent}事件。
      * Also emits a {Sent} event.
      */
     function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
@@ -163,8 +179,11 @@ contract ERC777 is Context, IERC777, IERC20 {
      */
     function isOperatorFor(address operator, address tokenHolder) public view virtual override returns (bool) {
         return
+        // 操作员自己就是 代币持有者
             operator == tokenHolder ||
+            // 或者操作员是默认操作员之一 并且没被移除权限
             (_defaultOperators[operator] && !_revokedDefaultOperators[tokenHolder][operator]) ||
+            // 或者是_operators里记录着的 代币持有者 授予权限的的操作员
             _operators[tokenHolder][operator];
     }
 
@@ -187,11 +206,15 @@ contract ERC777 is Context, IERC777, IERC20 {
      * @dev See {IERC777-revokeOperator}.
      */
     function revokeOperator(address operator) public virtual override {
+        // 不能废除自己
         require(operator != _msgSender(), "ERC777: revoking self as operator");
 
         if (_defaultOperators[operator]) {
+            // 如果操作员是默认的操作员，则在_revokedDefaultOperators里记录
+            // 给自己名下的某人废除权限
             _revokedDefaultOperators[_msgSender()][operator] = true;
         } else {
+            // 不是默认操作员，直接在_operators里删除即可
             delete _operators[_msgSender()][operator];
         }
 
@@ -217,6 +240,7 @@ contract ERC777 is Context, IERC777, IERC20 {
         bytes memory data,
         bytes memory operatorData
     ) public virtual override {
+        // 这里调用者可以是 代币持有者也就是sender， 也可以是默认操作员或者被授权的操作员
         require(isOperatorFor(_msgSender(), sender), "ERC777: caller is not an operator for holder");
         _send(sender, recipient, amount, data, operatorData, true);
     }
@@ -476,6 +500,8 @@ contract ERC777 is Context, IERC777, IERC20 {
     }
 
     /**
+    如果接口已注册，则调用to.tokensreceived()。
+    如果接收者是一个合约，但是tokensReceived()没有为接收者注册，则返回
      * @dev Call to.tokensReceived() if the interface is registered. Reverts if the recipient is a contract but
      * tokensReceived() was not registered for the recipient
      * @param operator address operator requesting the transfer

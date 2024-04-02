@@ -347,6 +347,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
             require(currentAllowance >= amount, "ERC20: insufficient allowance");
             // currentAllowance - amount 必然不会变负数，不会报错，无需检查，节约gas
             unchecked {
+                // owner给spender修改授权额度，原本额度-这次花掉的额度
                 _approve(owner, spender, currentAllowance - amount);
             }
         }
